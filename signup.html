@@ -22,28 +22,41 @@
 
     <h1>Signup for Spotify Frame</h1>
     <p>Enter your email to get started:</p>
-    <input type="email" id="email" placeholder="Your Email" required>
-    <button id="signup-btn">Sign Up</button>
 
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    document.getElementById("signup-form").addEventListener("submit", async function(event) {
-        event.preventDefault();
+    <form id="signup-form">
+        <input type="email" id="email" placeholder="Your Email" required>
+        <button type="submit">Sign Up</button>
+    </form>
 
-        const email = document.getElementById("email").value;
+    <p id="response-message"></p>
 
-        const response = await fetch("https://spotify-frame-1.onrender.com/signup", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ email: email })
+    <script>
+        document.getElementById("signup-form").addEventListener("submit", async function(event) {
+            event.preventDefault();  // Prevent full page reload
+
+            const email = document.getElementById("email").value;
+            const responseMessage = document.getElementById("response-message");
+
+            try {
+                const response = await fetch("https://spotify-frame-1.onrender.com/signup", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: email })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Signup failed: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                responseMessage.textContent = `✅ Success! Your pairing code: ${data.pairing_code}`;
+                responseMessage.style.color = "green";
+            } catch (error) {
+                responseMessage.textContent = `❌ Error: ${error.message}`;
+                responseMessage.style.color = "red";
+            }
         });
+    </script>
 
-        const data = await response.json();
-        alert(data.message || "Error signing up!");
-    });
-});
-</script>
 </body>
 </html>
