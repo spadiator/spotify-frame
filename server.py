@@ -156,7 +156,7 @@ def get_current_song():
     else:
         return {"error": "No song currently playing"}
 
-i# 🔥 Ensure FastAPI runs on Render's dynamically assigned port
+# 🔥 Ensure FastAPI runs on Render's dynamically assigned port
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 10000))  # Use Render's assigned port
     uvicorn.run(app, host="0.0.0.0", port=port)
