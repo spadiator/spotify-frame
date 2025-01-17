@@ -47,14 +47,18 @@ SPOTIFY_REDIRECT_URI = "https://spotify-frame-1.onrender.com/callback"
 def generate_pairing_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
-# Signup Endpoint
+from pydantic import BaseModel
+
+class SignupRequest(BaseModel):
+    email: str
+
 @app.post("/signup")
-def signup(email: str):
+def signup(data: SignupRequest):
     pairing_code = generate_pairing_code()
 
     # Store in Supabase
     data, count = supabase.table("users").insert({
-        "email": email,
+        "email": data.email,
         "pairing_code": pairing_code,
         "spotify_token": None
     }).execute()

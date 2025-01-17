@@ -25,28 +25,29 @@
     <input type="email" id="email" placeholder="Your Email">
     <button onclick="signup()">Sign Up</button>
 
-    <script>
-        async function signup() {
-            const email = document.getElementById("email").value;
-            if (!email) {
-                alert("Please enter your email");
-                return;
-            }
+    <form id="signup-form">
+    <input type="email" id="email" placeholder="Enter your email" required>
+    <button type="submit">Sign Up</button>
+</form>
 
-            const response = await fetch("https://spotify-frame-dhso.onrender.com/signup", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email })
-            });
+<script>
+document.getElementById("signup-form").addEventListener("submit", async function(event) {
+    event.preventDefault();
 
-            const data = await response.json();
-            if (data.pairing_code) {
-                window.location.href = `https://spotify-frame-dhso.onrender.com/spotify-auth?pairing_code=${data.pairing_code}`;
-            } else {
-                alert("Signup failed. Try again.");
-            }
-        }
-    </script>
+    const email = document.getElementById("email").value;
+
+    const response = await fetch("https://spotify-frame-1.onrender.com/signup", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email: email })
+    });
+
+    const data = await response.json();
+    alert(data.message || "Error signing up!");
+});
+</script>
 
 </body>
 </html>
