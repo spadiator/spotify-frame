@@ -40,6 +40,7 @@ SPOTIFY_API_URL = "https://api.spotify.com/v1/me/player/currently-playing"
 # Spotify Credentials (unchanged)
 SPOTIFY_CLIENT_ID = "fa74ddfa85064b4a9cd807d1b596e3d6"
 SPOTIFY_CLIENT_SECRET = "09e10109bd5d42e493d7751f37d409fc"
+SPOTIFY_REFRESH_TOKEN = "AQBPdyZ42yIk6HftPQLOkA8ehvKzXjEvkoPe9SnUILl_u_kC7tl7hDSLAAbiY5vTABdcBkZaqpdfUH-p8s4MyHCtBVNnPyg2-88srqu7nkVQ_3YAlWk7rgbTzc2rdz5rcwU"
 SPOTIFY_REDIRECT_URI = "https://spotify-frame-1.onrender.com/callback"
 
 # Generate Unique Pairing Code
