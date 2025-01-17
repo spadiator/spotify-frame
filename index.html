@@ -29,6 +29,24 @@
     <p id="song-title">Loading...</p>
 
     <script>
+<<<<<<< HEAD
+        async function fetchNowPlaying() {
+            try {
+                const response = await fetch("https://spotify-frame-dhso.onrender.com/now-playing");
+                const data = await response.json();
+                
+                if (data.error) {
+                    document.getElementById("song-info").textContent = "No song is currently playing.";
+                    document.getElementById("album-art").src = "";
+                } else {
+                    document.getElementById("album-art").src = data.album_art;
+                    document.getElementById("song-info").textContent = `${data.song} - ${data.artist}`;
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                document.getElementById("song-info").textContent = "Error fetching song.";
+            }
+=======
         function fetchSong() {
             fetch("https://spotify-frame-dhso.onrender.com/currently-playing")
                 .then(response => response.json())
@@ -45,6 +63,7 @@
                     console.error("Error fetching song:", error);
                     document.getElementById("song-title").innerText = "Error fetching song.";
                 });
+>>>>>>> 68bc6a7 (Fixed frontend API call and backend route)
         }
 
         // Fetch song info every 10 seconds
