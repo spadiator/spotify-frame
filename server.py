@@ -6,6 +6,7 @@ import string
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
+from fastapi import FastAPI, HTTPException, Form
 
 # Initialize FastAPI
 app = FastAPI()
@@ -55,23 +56,28 @@ class SignupRequest(BaseModel):
 # ✅ **FIXED: Properly Handles JSON Input & Returns JSON**
 @app.post("/signup")
 def signup(email: str = Form(...)):
-    try:
-        pairing_code = generate_pairing_code()
+    pairing_code = generate_pairing_code()
+    print(f"Attempting to insert user: {email} with pairing code {pairing_code}")  # Debugging print
 
-        # Store user in Supabase
+    # Store in Supabase
+    try:
         response = supabase.table("users").insert({
             "email": email,
             "pairing_code": pairing_code,
             "spotify_token": None
         }).execute()
 
-        print("Signup response:", response)
+        print("Supabase response:", response)  # Debugging print
+
+        if "error" in response and response["error"]:
+            print("Supabase Insert Error:", response["error"])
+            raise HTTPException(status_code=500, detail=f"Supabase Error: {response['error']['message']}")
 
         return {"message": "User registered", "pairing_code": pairing_code}
 
     except Exception as e:
-        print("Error during signup:", str(e))
-        raise HTTPException(status_code=500, detail="Error saving user data")
+        print("Supabase Exception:", str(e))  # Debugging print
+        raise HTTPException(status_code=500, detail=f"Error saving user data: {str(e)}")
 
 
 
