@@ -24,12 +24,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Supabase Setup
+# Supabase Setup (Reverting to the working Supabase URL)
 SUPABASE_URL = "https://lsbbqdhbhnxhosrrmqkn.supabase.co"
 SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzYmJxZGhiaG54aG9zcnJtcWtuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcwNDY0ODYsImV4cCI6MjA1MjYyMjQ4Nn0.RJqYuXQAV5KJiC5_PNUPOQq_qukUlMF2NYm-osZK-PE"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 
-# Spotify Credentials
+# Spotify Credentials (Ensuring these are correctly used)
 SPOTIFY_CLIENT_ID = "fa74ddfa85064b4a9cd807d1b596e3d6"
 SPOTIFY_CLIENT_SECRET = "09e10109bd5d42e493d7751f37d409fc"
 SPOTIFY_REDIRECT_URI = "https://spotify-frame-1.onrender.com/callback"
@@ -84,28 +84,25 @@ def spotify_callback(code: str, state: str):
     else:
         raise HTTPException(status_code=400, detail="Spotify authorization failed")
 
-# ✅ Add the currently-playing endpoint
+# Currently Playing Endpoint (Restored from working version)
 @app.get("/currently-playing")
 def get_current_song():
-    # Fetch the most recent user token from Supabase
-    data = supabase.table("users").select("spotify_token").order("created_at", desc=True).limit(1).execute()
-    if not data or not data[1] or not data[1][0]["spotify_token"]:
-        raise HTTPException(status_code=400, detail="No Spotify token found")
+    access_token = supabase.table("users").select("spotify_token").execute()
 
-    access_token = data[1][0]["spotify_token"]
-    SPOTIFY_API_URL = "https://api.spotify.com/v1/me/player/currently-playing"
-    
-    headers = {"Authorization": f"Bearer {access_token}"}
-    response = requests.get(SPOTIFY_API_URL, headers=headers)
+    if not access_token.data or not access_token.data[0]["spotify_token"]:
+        return {"error": "Failed to retrieve token"}
+
+    headers = {"Authorization": f"Bearer {access_token.data[0]['spotify_token']}"}
+    response = requests.get("https://api.spotify.com/v1/me/player/currently-playing", headers=headers)
 
     if response.status_code == 200:
         data = response.json()
-        if "item" in data:
-            song_name = data["item"]["name"]
-            album_art = data["item"]["album"]["images"][0]["url"]
-            return {"song": song_name, "album_art": album_art}
-    return {"error": "No song currently playing"}
+        song_name = data["item"]["name"]
+        album_art = data["item"]["album"]["images"][0]["url"]
+        return {"song": song_name, "album_art": album_art}
+    else:
+        return {"error": "No song currently playing"}
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))
+    port = int(os.getenv("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
