@@ -8,6 +8,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 from fastapi import FastAPI, HTTPException, Form
 from pydantic import BaseModel
+from fastapi.responses import RedirectResponse
+
+# Spotify Credentials (unchanged)
+SPOTIFY_CLIENT_ID = "fa74ddfa85064b4a9cd807d1b596e3d6"
+SPOTIFY_CLIENT_SECRET = "09e10109bd5d42e493d7751f37d409fc"
+SPOTIFY_REFRESH_TOKEN = "AQBPdyZ42yIk6HftPQLOkA8ehvKzXjEvkoPe9SnUILl_u_kC7tl7hDSLAAbiY5vTABdcBkZaqpdfUH-p8s4MyHCtBVNnPyg2-88srqu7nkVQ_3YAlWk7rgbTzc2rdz5rcwU"
+SPOTIFY_REDIRECT_URI = "https://spotify-frame-1.onrender.com/callback"
+
+# Supabase Setup
+SUPABASE_URL = "https://lsbbqdhbhnxhosrrmqkn.supabase.co"
+SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzYmJxZGhiaG54aG9zcnJtcWtuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcwNDY0ODYsImV4cCI6MjA1MjYyMjQ4Nn0.RJqYuXQAV5KJiC5_PNUPOQq_qukUlMF2NYm-osZK-PE"
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 
 # Initialize FastAPI
 app = FastAPI()
@@ -41,11 +53,39 @@ app.add_middleware(
 def root():
     return {"message": "API is running"}
 
+@app.get("/spotify-auth")
+def get_spotify_auth(pairing_code: str):
+    auth_url = f"https://accounts.spotify.com/authorize?client_id={SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=https://spotify-frame-dhso.onrender.com/callback&scope=user-read-playback-state user-read-currently-playing&state={pairing_code}"
+    return RedirectResponse(auth_url)
 
-# Supabase Setup
-SUPABASE_URL = "https://lsbbqdhbhnxhosrrmqkn.supabase.co"
-SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzYmJxZGhiaG54aG9zcnJtcWtuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcwNDY0ODYsImV4cCI6MjA1MjYyMjQ4Nn0.RJqYuXQAV5KJiC5_PNUPOQq_qukUlMF2NYm-osZK-PE"
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
+
+@app.get("/callback")
+def spotify_callback(code: str, state: str):
+    token_url = "https://accounts.spotify.com/api/token"
+    payload = {
+        "grant_type": "authorization_code",
+        "code": code,
+        "redirect_uri": "https://spotify-frame-dhso.onrender.com/callback",  # Must match exactly
+        "client_id": SPOTIFY_CLIENT_ID,
+        "client_secret": SPOTIFY_CLIENT_SECRET,
+    }
+    response = requests.post(token_url, data=payload)
+
+    if response.status_code == 200:
+        access_token = response.json().get("access_token")
+        refresh_token = response.json().get("refresh_token")
+
+        # Store tokens in Supabase linked to pairing code
+        supabase.table("users").update({
+            "spotify_access_token": access_token,
+            "spotify_refresh_token": refresh_token
+        }).eq("pairing_code", state).execute()
+
+        return {"message": "Spotify authorization successful"}
+    else:
+        raise HTTPException(status_code=400, detail="Spotify authorization failed")
+
+
 
 class SignupRequest(BaseModel):
     email: str
@@ -69,19 +109,12 @@ def signup(request: SignupRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error saving user data: {str(e)}")
 
-# Root route for basic health check
-@app.get("/")
-def read_root():
-    return {"message": "Server is running!"}
+
 
 # Spotify API URL
 SPOTIFY_API_URL = "https://api.spotify.com/v1/me/player/currently-playing"
 
-# Spotify Credentials (unchanged)
-SPOTIFY_CLIENT_ID = "fa74ddfa85064b4a9cd807d1b596e3d6"
-SPOTIFY_CLIENT_SECRET = "09e10109bd5d42e493d7751f37d409fc"
-SPOTIFY_REFRESH_TOKEN = "AQBPdyZ42yIk6HftPQLOkA8ehvKzXjEvkoPe9SnUILl_u_kC7tl7hDSLAAbiY5vTABdcBkZaqpdfUH-p8s4MyHCtBVNnPyg2-88srqu7nkVQ_3YAlWk7rgbTzc2rdz5rcwU"
-SPOTIFY_REDIRECT_URI = "https://spotify-frame-1.onrender.com/callback"
+
 
 # Generate Unique Pairing Code
 def generate_pairing_code():
