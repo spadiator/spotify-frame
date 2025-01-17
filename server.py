@@ -1,99 +1,62 @@
 import os
 import uvicorn
 import requests
-import random
-import string
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from supabase import create_client, Client
 
-# Initialize FastAPI
+# Initialize FastAPI **only once**
 app = FastAPI()
 
-# Allow frontend access
+# CORS Middleware - Allows frontend to call API
 origins = [
-    "https://spotify-frame-1.onrender.com",
-    "https://spotify-frame-dhso.onrender.com",
+    "https://spotify-frame-1.onrender.com",  # Frontend URL
+    "https://spotify-frame-dhso.onrender.com",  # Backend itself (for debugging)
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=origins,  # Allows specific origins only
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allows all HTTP methods
+    allow_headers=["*"],  # Allows all headers
 )
 
-# Supabase Setup (Reverting to the working Supabase URL)
-SUPABASE_URL = "https://lsbbqdhbhnxhosrrmqkn.supabase.co"
-SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzYmJxZGhiaG54aG9zcnJtcWtuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcwNDY0ODYsImV4cCI6MjA1MjYyMjQ4Nn0.RJqYuXQAV5KJiC5_PNUPOQq_qukUlMF2NYm-osZK-PE"
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
+# Root route for basic health check
+@app.get("/")
+def read_root():
+    return {"message": "Server is running!"}
 
-# Spotify Credentials (Ensuring these are correctly used)
+# Spotify API URL
+SPOTIFY_API_URL = "https://api.spotify.com/v1/me/player/currently-playing"
+
+# Your actual Spotify credentials
 SPOTIFY_CLIENT_ID = "fa74ddfa85064b4a9cd807d1b596e3d6"
 SPOTIFY_CLIENT_SECRET = "09e10109bd5d42e493d7751f37d409fc"
-SPOTIFY_REDIRECT_URI = "https://spotify-frame-1.onrender.com/callback"
+SPOTIFY_REFRESH_TOKEN = "AQBPdyZ42yIk6HftPQLOkA8ehvKzXjEvkoPe9SnUILl_u_kC7tl7hDSLAAbiY5vTABdcBkZaqpdfUH-p8s4MyHCtBVNnPyg2-88srqu7nkVQ_3YAlWk7rgbTzc2rdz5rcwU"
 
-# Generate Unique Pairing Code
-def generate_pairing_code():
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-
-# Signup Endpoint
-@app.post("/signup")
-def signup(email: str):
-    pairing_code = generate_pairing_code()
-
-    # Store in Supabase
-    data, count = supabase.table("users").insert({
-        "email": email,
-        "pairing_code": pairing_code,
-        "spotify_token": None
-    }).execute()
-
-    if not data:
-        raise HTTPException(status_code=500, detail="Error saving user data")
-
-    return {"message": "User registered", "pairing_code": pairing_code}
-
-# Spotify Authorization URL
-@app.get("/spotify-auth")
-def get_spotify_auth(pairing_code: str):
-    auth_url = f"https://accounts.spotify.com/authorize?client_id={SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri={SPOTIFY_REDIRECT_URI}&scope=user-read-playback-state user-read-currently-playing&state={pairing_code}"
-    return {"auth_url": auth_url}
-
-# Callback for Spotify OAuth
-@app.get("/callback")
-def spotify_callback(code: str, state: str):
-    token_url = "https://accounts.spotify.com/api/token"
+# Function to refresh Spotify token
+def refresh_spotify_token():
+    refresh_url = "https://accounts.spotify.com/api/token"
     payload = {
-        "grant_type": "authorization_code",
-        "code": code,
-        "redirect_uri": SPOTIFY_REDIRECT_URI,
+        "grant_type": "refresh_token",
+        "refresh_token": SPOTIFY_REFRESH_TOKEN,
         "client_id": SPOTIFY_CLIENT_ID,
-        "client_secret": SPOTIFY_CLIENT_SECRET,
+        "client_secret": SPOTIFY_CLIENT_SECRET
     }
-    response = requests.post(token_url, data=payload)
-
+    response = requests.post(refresh_url, data=payload)
     if response.status_code == 200:
-        access_token = response.json().get("access_token")
+        return response.json().get("access_token")
+    return None
 
-        # Store access token in Supabase
-        supabase.table("users").update({"spotify_token": access_token}).eq("pairing_code", state).execute()
-
-        return {"message": "Spotify authorized successfully"}
-    else:
-        raise HTTPException(status_code=400, detail="Spotify authorization failed")
-
-# Currently Playing Endpoint (Restored from working version)
+# API route to get currently playing song
 @app.get("/currently-playing")
 def get_current_song():
-    access_token = supabase.table("users").select("spotify_token").execute()
+    access_token = refresh_spotify_token()
+    if not access_token:
+        return {"error": "Failed to refresh token"}
 
-    if not access_token.data or not access_token.data[0]["spotify_token"]:
-        return {"error": "Failed to retrieve token"}
-
-    headers = {"Authorization": f"Bearer {access_token.data[0]['spotify_token']}"}
-    response = requests.get("https://api.spotify.com/v1/me/player/currently-playing", headers=headers)
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.get(SPOTIFY_API_URL, headers=headers)
 
     if response.status_code == 200:
         data = response.json()
@@ -103,6 +66,7 @@ def get_current_song():
     else:
         return {"error": "No song currently playing"}
 
+# Run FastAPI server (Render requires binding to 0.0.0.0)
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 10000))
+    port = int(os.getenv("PORT", 10000))  # Ensure it's using Render's port
     uvicorn.run(app, host="0.0.0.0", port=port)
