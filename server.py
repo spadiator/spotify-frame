@@ -52,21 +52,27 @@ from pydantic import BaseModel
 class SignupRequest(BaseModel):
     email: str
 
+# ✅ **FIXED: Properly Handles JSON Input & Returns JSON**
 @app.post("/signup")
-def signup(data: SignupRequest):
-    pairing_code = generate_pairing_code()
+def signup(email: str = Form(...)):
+    try:
+        pairing_code = generate_pairing_code()
 
-    # Store in Supabase
-    data, count = supabase.table("users").insert({
-        "email": data.email,
-        "pairing_code": pairing_code,
-        "spotify_token": None
-    }).execute()
+        # Store user in Supabase
+        response = supabase.table("users").insert({
+            "email": email,
+            "pairing_code": pairing_code,
+            "spotify_token": None
+        }).execute()
 
-    if not data:
+        print("Signup response:", response)
+
+        return {"message": "User registered", "pairing_code": pairing_code}
+
+    except Exception as e:
+        print("Error during signup:", str(e))
         raise HTTPException(status_code=500, detail="Error saving user data")
 
-    return {"message": "User registered", "pairing_code": pairing_code}
 
 
 # Function to refresh Spotify token
