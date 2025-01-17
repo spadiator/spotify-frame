@@ -22,10 +22,29 @@ app = FastAPI(
     title="Spotify Frame API",
     description="API for retrieving and displaying currently playing Spotify album art.",
     version="1.0.0",
-    docs_url="/docs",
+    docs_url="/docs",   # Ensure the API docs are enabled at /docs
     redoc_url="/redoc",
     openapi_url="/openapi.json"
 )
+
+# Allow frontend to access API
+origins = [
+    "https://spotify-frame-1.onrender.com",  # Frontend URL
+    "https://spotify-frame.onrender.com",    # Backend API URL itself
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # Ensure the frontend can call the API
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Test Root Endpoint
+@app.get("/")
+def root():
+    return {"message": "API is running"}
 
 
 # Supabase Setup
