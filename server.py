@@ -25,7 +25,7 @@ app.add_middleware(
 )
 
 # Supabase Setup
-SUPABASE_URL = "https://lsbbqdhbhnxhosrrmqkn.supabase.co/rest/v1/"
+SUPABASE_URL = "https://lsbbqdhbhnxhosrrmqkn.supabase.co"
 SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzYmJxZGhiaG54aG9zcnJtcWtuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcwNDY0ODYsImV4cCI6MjA1MjYyMjQ4Nn0.RJqYuXQAV5KJiC5_PNUPOQq_qukUlMF2NYm-osZK-PE"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 
