@@ -22,18 +22,15 @@
 
     <h1>Signup for Spotify Frame</h1>
     <p>Enter your email to get started:</p>
-
-    <form id="signup-form">
-        <input type="email" id="email" placeholder="Your Email" required>
-        <button type="submit">Sign Up</button>
-    </form>
+    <input type="email" id="email" placeholder="Your Email" required>
+    <button id="signup-btn">Sign Up</button>
 
     <script>
-        document.getElementById("signup-form").addEventListener("submit", async function(event) {
-            event.preventDefault(); // Prevent page reload
-            
-            const email = document.getElementById("email").value.trim(); // Get email input
-            
+        document.getElementById("signup-btn").addEventListener("click", async function(event) {
+            event.preventDefault();
+
+            const email = document.getElementById("email").value.trim();
+
             if (!email) {
                 alert("Please enter a valid email.");
                 return;
@@ -48,7 +45,17 @@
                     body: JSON.stringify({ email: email })
                 });
 
-                const data = await response.json();
+                // Log the response for debugging
+                console.log("Response status:", response.status);
+                const responseText = await response.text();
+                console.log("Raw response text:", responseText);
+
+                // Check if the response is empty
+                if (!responseText) {
+                    throw new Error("Empty response from server.");
+                }
+
+                const data = JSON.parse(responseText);
 
                 if (response.ok) {
                     alert(`Success! Pairing Code: ${data.pairing_code}`);
