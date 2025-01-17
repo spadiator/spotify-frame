@@ -27,11 +27,6 @@ app = FastAPI(
     openapi_url="/openapi.json"
 )
 
-# Allow frontend to access API
-origins = [
-    "https://spotify-frame-1.onrender.com",  # Frontend URL
-    "https://spotify-frame.onrender.com",    # Backend API URL itself
-]
 
 app.add_middleware(
     CORSMiddleware,
