@@ -18,15 +18,13 @@ origins = [
     "https://spotify-frame-dhso.onrender.com",
 ]
 
-app = FastAPI()
-
-# ✅ Allow requests from any origin (for now)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Change to specific URLs later for security
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+app = FastAPI(
+    title="Spotify Frame API",
+    description="API for retrieving and displaying currently playing Spotify album art.",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
 )
 
 
