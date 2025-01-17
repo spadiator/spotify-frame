@@ -73,19 +73,20 @@ def spotify_callback(code: str, state: str):
 
     if response.status_code == 200:
         access_token = response.json().get("access_token")
-        refresh_token = response.json().get("refresh_token")
+        print(f"DEBUG: Retrieved Spotify Token - {access_token}")  # Debugging print statement
 
-        # Store tokens in Supabase linked to pairing code
-        supabase.table("users").update({
-            "spotify_token": access_token,
-            "spotify_refresh_token": refresh_token
-        }).eq("pairing_code", state).execute()
+        if not access_token:
+            print("ERROR: No access token received from Spotify.")
+            raise HTTPException(status_code=400, detail="Failed to retrieve Spotify token")
+
+        # Store access token in Supabase
+        update_response = supabase.table("users").update({"spotify_token": access_token}).eq("pairing_code", state).execute()
+        print(f"DEBUG: Supabase Update Response - {update_response}")  # Debugging print statement
 
         return {"message": "Spotify authorization successful"}
     else:
+        print(f"ERROR: Spotify token request failed - {response.text}")
         raise HTTPException(status_code=400, detail="Spotify authorization failed")
-
-
 
 
 
