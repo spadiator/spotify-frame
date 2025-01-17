@@ -17,18 +17,44 @@ origins = [
     "https://spotify-frame-dhso.onrender.com",
 ]
 
+app = FastAPI()
+
+# ✅ Allow requests from any origin (for now)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],  # Change to specific URLs later for security
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+
 # Supabase Setup
 SUPABASE_URL = "https://lsbbqdhbhnxhosrrmqkn.supabase.co"
 SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzYmJxZGhiaG54aG9zcnJtcWtuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcwNDY0ODYsImV4cCI6MjA1MjYyMjQ4Nn0.RJqYuXQAV5KJiC5_PNUPOQq_qukUlMF2NYm-osZK-PE"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
+
+class SignupRequest(BaseModel):
+    email: str
+
+def generate_pairing_code():
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+@app.post("/signup")
+def signup(request: SignupRequest):
+    email = request.email
+    pairing_code = generate_pairing_code()
+
+    try:
+        response = supabase.table("users").insert({
+            "email": email,
+            "pairing_code": pairing_code,
+            "spotify_token": None
+        }).execute()
+        
+        return {"message": "User registered successfully!", "pairing_code": pairing_code}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saving user data: {str(e)}")
 
 # Root route for basic health check
 @app.get("/")
