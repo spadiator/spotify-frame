@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Now Playing on Spotify</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #181818;
+            color: white;
+        }
+        #album-art {
+            width: 400px;
+            height: 400px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 20px rgba(255, 255, 255, 0.2);
+        }
+        #song-info {
+            margin-top: 20px;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Now Playing on Spotify</h1>
+    <img id="album-art" src="" alt="Album Art">
+    <div id="song-info">Fetching song...</div>
+
+    <script>
+        async function fetchNowPlaying() {
+            try {
+                const response = await fetch("http://127.0.0.1:8000/now-playing");
+                const data = await response.json();
+                
+                if (data.error) {
+                    document.getElementById("song-info").textContent = "No song is currently playing.";
+                    document.getElementById("album-art").src = "";
+                } else {
+                    document.getElementById("album-art").src = data.album_art;
+                    document.getElementById("song-info").textContent = `${data.song} - ${data.artist}`;
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                document.getElementById("song-info").textContent = "Error fetching song.";
+            }
+        }
+
+        // Fetch every 5 seconds
+        setInterval(fetchNowPlaying, 5000);
+        fetchNowPlaying(); // Fetch immediately on load
+    </script>
+</body>
+</html>
