@@ -26,7 +26,7 @@ app.add_middleware(
 
 # Supabase Setup
 SUPABASE_URL = "https://lsbbqdhbhnxhosrrmqkn.supabase.co/rest/v1/"
-SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzYmJxZGhiaG54aG9zcnJtcWtuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcwNDY0ODYsImV4cCI6MjA1MjYyMjQ4Nn0.RJqYuXQAV5KJiC5_PNUPOQq_qukUlMF2NYm-osZK-PE"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 
 # Spotify Credentials
@@ -84,29 +84,6 @@ def spotify_callback(code: str, state: str):
     else:
         raise HTTPException(status_code=400, detail="Spotify authorization failed")
 
-# Fetch Currently Playing Song
-@app.get("/currently-playing")
-def get_current_song():
-    SPOTIFY_API_URL = "https://api.spotify.com/v1/me/player/currently-playing"
-
-    # Retrieve a valid access token from Supabase
-    response = supabase.table("users").select("spotify_token").execute()
-    access_token = response.data[0]["spotify_token"] if response.data else None
-
-    if not access_token:
-        return {"error": "Failed to retrieve access token"}
-
-    headers = {"Authorization": f"Bearer {access_token}"}
-    response = requests.get(SPOTIFY_API_URL, headers=headers)
-
-    if response.status_code == 200:
-        data = response.json()
-        song_name = data["item"]["name"]
-        album_art = data["item"]["album"]["images"][0]["url"]
-        return {"song": song_name, "album_art": album_art}
-    else:
-        return {"error": "No song currently playing"}
-
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 10000))  # Explicitly binding to 10000 for Render
+    port = int(os.getenv("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
