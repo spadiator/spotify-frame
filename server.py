@@ -59,3 +59,11 @@ def get_current_song():
         return {"song": song_name, "album_art": album_art}
     else:
         return {"error": "No song currently playing"}
+import os
+import uvicorn
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))  # Default to port 8000 for Render
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
+
