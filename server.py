@@ -29,6 +29,14 @@ SUPABASE_URL = "https://lsbbqdhbhnxhosrrmqkn.supabase.co"
 SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzYmJxZGhiaG54aG9zcnJtcWtuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcwNDY0ODYsImV4cCI6MjA1MjYyMjQ4Nn0.RJqYuXQAV5KJiC5_PNUPOQq_qukUlMF2NYm-osZK-PE"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 
+# Root route for basic health check
+@app.get("/")
+def read_root():
+    return {"message": "Server is running!"}
+
+# Spotify API URL
+SPOTIFY_API_URL = "https://api.spotify.com/v1/me/player/currently-playing"
+
 # Spotify Credentials (unchanged)
 SPOTIFY_CLIENT_ID = "fa74ddfa85064b4a9cd807d1b596e3d6"
 SPOTIFY_CLIENT_SECRET = "09e10109bd5d42e493d7751f37d409fc"
