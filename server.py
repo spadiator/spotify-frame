@@ -77,13 +77,18 @@ def spotify_callback(code: str, state: str):
 
         # Store tokens in Supabase linked to pairing code
         supabase.table("users").update({
-            "spotify_access_token": access_token,
+            "spotify_token": access_token,
             "spotify_refresh_token": refresh_token
         }).eq("pairing_code", state).execute()
 
         return {"message": "Spotify authorization successful"}
     else:
         raise HTTPException(status_code=400, detail="Spotify authorization failed")
+
+
+
+
+
 
 
 
