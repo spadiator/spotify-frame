@@ -158,5 +158,5 @@ def get_current_song():
 
 # 🔥 Ensure FastAPI runs on Render's dynamically assigned port
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 10000))  # Use Render's assigned port
+    port = int(os.getenv("PORT", 8000))  # Use Render's assigned port, fallback to 8000 locally
     uvicorn.run(app, host="0.0.0.0", port=port)
