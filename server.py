@@ -84,6 +84,28 @@ def spotify_callback(code: str, state: str):
     else:
         raise HTTPException(status_code=400, detail="Spotify authorization failed")
 
+# ✅ Add the currently-playing endpoint
+@app.get("/currently-playing")
+def get_current_song():
+    # Fetch the most recent user token from Supabase
+    data = supabase.table("users").select("spotify_token").order("created_at", desc=True).limit(1).execute()
+    if not data or not data[1] or not data[1][0]["spotify_token"]:
+        raise HTTPException(status_code=400, detail="No Spotify token found")
+
+    access_token = data[1][0]["spotify_token"]
+    SPOTIFY_API_URL = "https://api.spotify.com/v1/me/player/currently-playing"
+    
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.get(SPOTIFY_API_URL, headers=headers)
+
+    if response.status_code == 200:
+        data = response.json()
+        if "item" in data:
+            song_name = data["item"]["name"]
+            album_art = data["item"]["album"]["images"][0]["url"]
+            return {"song": song_name, "album_art": album_art}
+    return {"error": "No song currently playing"}
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
