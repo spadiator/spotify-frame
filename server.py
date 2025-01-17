@@ -1,42 +1,57 @@
 import os
 import uvicorn
-from fastapi import FastAPI
 import requests
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+# Initialize FastAPI **only once**
 app = FastAPI()
 
-# Allow requests from your frontend
+# CORS Middleware - Allows frontend to call API
 origins = [
-    "https://spotify-frame-1.onrender.com",  # Your frontend URL
-    "https://spotify-frame-dhso.onrender.com",  # Allowing itself (for debugging)
+    "https://spotify-frame-1.onrender.com",  # Frontend URL
+    "https://spotify-frame-dhso.onrender.com",  # Backend itself (for debugging)
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # Allows only specific origins
+    allow_origins=origins,  # Allows specific origins only
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
+    allow_methods=["*"],  # Allows all HTTP methods
     allow_headers=["*"],  # Allows all headers
 )
 
-app = FastAPI()
-
+# Root route for basic health check
 @app.get("/")
 def read_root():
     return {"message": "Server is running!"}
 
+# Spotify API URL
+SPOTIFY_API_URL = "https://api.spotify.com/v1/me/player/currently-playing"
+
+# Your actual Spotify credentials
+SPOTIFY_CLIENT_ID = "fa74ddfa85064b4a9cd807d1b596e3d6"
+SPOTIFY_CLIENT_SECRET = "09e10109bd5d42e493d7751f37d409fc"
+SPOTIFY_REFRESH_TOKEN = "AQBPdyZ42yIk6HftPQLOkA8ehvKzXjEvkoPe9SnUILl_u_kC7tl7hDSLAAbiY5vTABdcBkZaqpdfUH-p8s4MyHCtBVNnPyg2-88srqu7nkVQ_3YAlWk7rgbTzc2rdz5rcwU"
+
+# Function to refresh Spotify token
+def refresh_spotify_token():
+    refresh_url = "https://accounts.spotify.com/api/token"
+    payload = {
+        "grant_type": "refresh_token",
+        "refresh_token": SPOTIFY_REFRESH_TOKEN,
+        "client_id": SPOTIFY_CLIENT_ID,
+        "client_secret": SPOTIFY_CLIENT_SECRET
+    }
+    response = requests.post(refresh_url, data=payload)
+    if response.status_code == 200:
+        return response.json().get("access_token")
+    return None
+
+# API route to get currently playing song
 @app.get("/currently-playing")
 def get_current_song():
-    SPOTIFY_API_URL = "https://api.spotify.com/v1/me/player/currently-playing"
-
-    # Your actual Spotify credentials
-    SPOTIFY_CLIENT_ID = "fa74ddfa85064b4a9cd807d1b596e3d6"
-    SPOTIFY_CLIENT_SECRET = "09e10109bd5d42e493d7751f37d409fc"
-    SPOTIFY_REFRESH_TOKEN = "AQBPdyZ42yIk6HftPQLOkA8ehvKzXjEvkoPe9SnUILl_u_kC7tl7hDSLAAbiY5vTABdcBkZaqpdfUH-p8s4MyHCtBVNnPyg2-88srqu7nkVQ_3YAlWk7rgbTzc2rdz5rcwU"
-
-    # Use the refresh token function to get a fresh access token
-    access_token = refresh_spotify_token(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REFRESH_TOKEN)
+    access_token = refresh_spotify_token()
     if not access_token:
         return {"error": "Failed to refresh token"}
 
@@ -51,19 +66,7 @@ def get_current_song():
     else:
         return {"error": "No song currently playing"}
 
-def refresh_spotify_token(client_id, client_secret, refresh_token):
-    refresh_url = "https://accounts.spotify.com/api/token"
-    payload = {
-        "grant_type": "refresh_token",
-        "refresh_token": refresh_token,
-        "client_id": client_id,
-        "client_secret": client_secret
-    }
-    response = requests.post(refresh_url, data=payload)
-    if response.status_code == 200:
-        return response.json().get("access_token")
-    return None
-
+# Run FastAPI server (Render requires binding to 0.0.0.0)
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 10000))  # Explicitly binding to 10000 for Render
+    port = int(os.getenv("PORT", 10000))  # Ensure it's using Render's port
     uvicorn.run(app, host="0.0.0.0", port=port)
