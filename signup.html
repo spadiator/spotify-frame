@@ -22,32 +22,45 @@
 
     <h1>Signup for Spotify Frame</h1>
     <p>Enter your email to get started:</p>
-    <input type="email" id="email" placeholder="Your Email">
-    <button onclick="signup()">Sign Up</button>
 
     <form id="signup-form">
-    <input type="email" id="email" placeholder="Enter your email" required>
-    <button type="submit">Sign Up</button>
-</form>
+        <input type="email" id="email" placeholder="Your Email" required>
+        <button type="submit">Sign Up</button>
+    </form>
 
-<script>
-document.getElementById("signup-form").addEventListener("submit", async function(event) {
-    event.preventDefault();
+    <script>
+        document.getElementById("signup-form").addEventListener("submit", async function(event) {
+            event.preventDefault(); // Prevent page reload
+            
+            const email = document.getElementById("email").value.trim(); // Get email input
+            
+            if (!email) {
+                alert("Please enter a valid email.");
+                return;
+            }
 
-    const email = document.getElementById("email").value;
+            try {
+                const response = await fetch("https://spotify-frame-1.onrender.com/signup", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ email: email })
+                });
 
-    const response = await fetch("https://spotify-frame-1.onrender.com/signup", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ email: email })
-    });
+                const data = await response.json();
 
-    const data = await response.json();
-    alert(data.message || "Error signing up!");
-});
-</script>
+                if (response.ok) {
+                    alert(`Success! Pairing Code: ${data.pairing_code}`);
+                } else {
+                    alert(data.detail || "Error signing up!");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Network error. Please try again.");
+            }
+        });
+    </script>
 
 </body>
 </html>
