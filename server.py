@@ -56,7 +56,20 @@ def signup(email: str):
     return {"message": "User registered", "pairing_code": pairing_code}
 
 
-# Currently Playing Endpoint (This was missing in the broken version)
+# Function to refresh Spotify token
+def refresh_spotify_token():
+    refresh_url = "https://accounts.spotify.com/api/token"
+    payload = {
+        "grant_type": "refresh_token",
+        "refresh_token": SPOTIFY_REFRESH_TOKEN,
+        "client_id": SPOTIFY_CLIENT_ID,
+        "client_secret": SPOTIFY_CLIENT_SECRET
+    }
+    response = requests.post(refresh_url, data=payload)
+    if response.status_code == 200:
+        return response.json().get("access_token")
+    return None
+
 @app.get("/currently-playing")
 def get_current_song():
     access_token = refresh_spotify_token()
