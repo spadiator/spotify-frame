@@ -2,6 +2,23 @@ import os
 import uvicorn
 from fastapi import FastAPI
 import requests
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
+# Allow requests from your frontend
+origins = [
+    "https://spotify-frame-1.onrender.com",  # Your frontend URL
+    "https://spotify-frame-dhso.onrender.com",  # Allowing itself (for debugging)
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # Allows only specific origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allows all headers
+)
 
 app = FastAPI()
 
