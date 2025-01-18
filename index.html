@@ -29,37 +29,42 @@
     <p id="song-title">Loading...</p>
 
     <script>
-        async function fetchNowPlaying() {
-            const pairingCode = localStorage.getItem("pairing_code"); // Retrieve stored pairing code
+        function fetchSong() {
+            // Retrieve the stored pairing code
+            const pairingCode = localStorage.getItem("pairing_code");
 
             if (!pairingCode) {
-                console.error("No pairing code found. User needs to sign up first.");
-                document.getElementById("song-title").textContent = "Pairing code missing.";
+                document.getElementById("song-title").innerText = "No pairing code found. Please sign up first.";
                 return;
             }
 
-            try {
-                const response = await fetch(`https://spotify-frame-dhso.onrender.com/currently-playing?pairing_code=${pairingCode}`);
-                const data = await response.json();
-
-                if (data.error) {
-                    document.getElementById("song-title").textContent = "No song is currently playing.";
-                    document.getElementById("album-art").src = "";
-                } else {
-                    document.getElementById("song-title").textContent = `${data.song} - ${data.artist}`;
-                    document.getElementById("album-art").src = data.album_art;
-                }
-            } catch (error) {
-                console.error("Error fetching song:", error);
-                document.getElementById("song-title").textContent = "Error fetching song.";
-            }
+            fetch(`https://spotify-frame-dhso.onrender.com/currently-playing?pairing_code=${pairingCode}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.song && data.album_art) {
+                        document.getElementById("song-title").innerText = `Now Playing: ${data.song}`;
+                        document.getElementById("album-art").src = data.album_art;
+                    } else {
+                        document.getElementById("song-title").innerText = "No song currently playing.";
+                        document.getElementById("album-art").src = "";
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching song:", error);
+                    document.getElementById("song-title").innerText = "Error fetching song.";
+                });
         }
 
         // Fetch song info every 10 seconds
-        setInterval(fetchNowPlaying, 10000);
+        setInterval(fetchSong, 10000);
 
         // Initial fetch
-        fetchNowPlaying();
+        fetchSong();
     </script>
 
 </body>
