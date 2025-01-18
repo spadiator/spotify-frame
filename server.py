@@ -179,7 +179,35 @@ def signup(email: str = Form(...)):
         print("Supabase Exception:", str(e))  # Debugging print
         raise HTTPException(status_code=500, detail=f"Error saving user data: {str(e)}")
 
+@app.get("/currently-playing")
+def get_currently_playing(pairing_code: str):
+    """ Fetches the currently playing song from Spotify using the stored access token. """
 
+    # 🔍 Retrieve the user's Spotify token from Supabase
+    user_data = supabase.table("users").select("spotify_token").eq("pairing_code", pairing_code).execute()
+    
+    if not user_data.data or not user_data.data[0].get("spotify_token"):
+        print(f"ERROR: No Spotify token found for pairing code {pairing_code}")
+        raise HTTPException(status_code=400, detail="User not authenticated with Spotify")
+
+    access_token = user_data.data[0]["spotify_token"]
+    
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    response = requests.get(SPOTIFY_API_URL, headers=headers)
+
+    if response.status_code == 200:
+        data = response.json()
+        song_name = data["item"]["name"]
+        artist_name = data["item"]["artists"][0]["name"]
+        album_art = data["item"]["album"]["images"][0]["url"]
+        
+        return {"song": song_name, "artist": artist_name, "album_art": album_art}
+    else:
+        print(f"ERROR: Failed to fetch currently playing song - {response.status_code} {response.text}")
+        return {"error": "No song currently playing or authentication failed"}
 
 # Function to refresh Spotify token
 def refresh_spotify_token():
