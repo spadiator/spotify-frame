@@ -115,8 +115,14 @@ class SignupRequest(BaseModel):
 def generate_pairing_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
+from pydantic import BaseModel
+
+class SignupRequest(BaseModel):
+    email: str
+
 @app.post("/signup")
-def signup(email: str = Form(...)):
+def signup(request: SignupRequest):
+    email = request.email  # Extract email from JSON body
     existing_user = supabase.table("users").select("*").eq("email", email).execute()
 
     if existing_user.data:
