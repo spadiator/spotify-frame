@@ -116,20 +116,20 @@ def generate_pairing_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
 @app.post("/signup")
-def signup(request: SignupRequest):
-    email = request.email
-    pairing_code = generate_pairing_code()
+def signup(email: str = Form(...)):
+    existing_user = supabase.table("users").select("*").eq("email", email).execute()
 
-    try:
-        response = supabase.table("users").insert({
+    if existing_user.data:
+        pairing_code = existing_user.data[0]["pairing_code"]
+    else:
+        pairing_code = generate_pairing_code()
+        supabase.table("users").insert({
             "email": email,
             "pairing_code": pairing_code,
             "spotify_token": None
         }).execute()
-        
-        return {"message": "User registered successfully!", "pairing_code": pairing_code}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error saving user data: {str(e)}")
+
+    return {"message": "User registered or logged in", "pairing_code": pairing_code}
 
 
 
