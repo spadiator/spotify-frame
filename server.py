@@ -14,7 +14,7 @@ from fastapi.responses import RedirectResponse
 SPOTIFY_CLIENT_ID = "fa74ddfa85064b4a9cd807d1b596e3d6"
 SPOTIFY_CLIENT_SECRET = "09e10109bd5d42e493d7751f37d409fc"
 SPOTIFY_REFRESH_TOKEN = "AQBPdyZ42yIk6HftPQLOkA8ehvKzXjEvkoPe9SnUILl_u_kC7tl7hDSLAAbiY5vTABdcBkZaqpdfUH-p8s4MyHCtBVNnPyg2-88srqu7nkVQ_3YAlWk7rgbTzc2rdz5rcwU"
-SPOTIFY_REDIRECT_URI = "https://spotify-frame-1.onrender.com/callback"
+SPOTIFY_REDIRECT_URI = "https://spotify-frame-dhso.onrender.com/callback"
 
 # Supabase Setup
 SUPABASE_URL = "https://lsbbqdhbhnxhosrrmqkn.supabase.co"
@@ -179,32 +179,49 @@ def signup(email: str = Form(...)):
 def refresh_spotify_token():
     refresh_url = "https://accounts.spotify.com/api/token"
     payload = {
-        "grant_type": "refresh_token",
-        "refresh_token": SPOTIFY_REFRESH_TOKEN,
+        "grant_type": "authorization_code",
+        "code": code,
+        "redirect_uri": SPOTIFY_REDIRECT_URI,
         "client_id": SPOTIFY_CLIENT_ID,
-        "client_secret": SPOTIFY_CLIENT_SECRET
+        "client_secret": SPOTIFY_CLIENT_SECRET,
     }
-    response = requests.post(refresh_url, data=payload)
-    if response.status_code == 200:
-        return response.json().get("access_token")
-    return None
-
-@app.get("/currently-playing")
-def get_current_song():
-    access_token = refresh_spotify_token()
-    if not access_token:
-        return {"error": "Failed to refresh token"}
-
-    headers = {"Authorization": f"Bearer {access_token}"}
-    response = requests.get("https://api.spotify.com/v1/me/player/currently-playing", headers=headers)
+    response = requests.post(token_url, data=payload)
 
     if response.status_code == 200:
         data = response.json()
-        song_name = data["item"]["name"]
-        album_art = data["item"]["album"]["images"][0]["url"]
-        return {"song": song_name, "album_art": album_art}
+        access_token = data.get("access_token")
+
+        print(f"DEBUG: Retrieved Spotify Token - {access_token}")
+
+        if not access_token:
+            print("ERROR: No access token received from Spotify.")
+            raise HTTPException(status_code=400, detail="Failed to retrieve Spotify token")
+
+        print(f"DEBUG: Checking Supabase for pairing code: {state}")
+
+        user_check = supabase.table("users").select("*").eq("pairing_code", state).execute()
+        print(f"DEBUG: Supabase User Check Response - {user_check}")
+
+        if not user_check.data:
+            print(f"ERROR: No user found with pairing code {state}")
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # 🔥 Fixing update query: Explicitly set returning="representation" to get response
+        update_payload = {"spotify_token": access_token}
+        print(f"DEBUG: Supabase Update Query - {update_payload}")
+
+        update_response = supabase.table("users").update(update_payload).eq("pairing_code", state).execute()
+        
+        print(f"DEBUG: Supabase Update Response - {update_response}")
+
+        if not update_response.data:
+            print(f"ERROR: Failed to update user in Supabase. Response: {update_response}")
+            raise HTTPException(status_code=500, detail="Failed to update Supabase with Spotify token")
+
+        return {"message": "Spotify authorization successful"}
     else:
-        return {"error": "No song currently playing"}
+        print(f"ERROR: Spotify token request failed - {response.text}")
+        raise HTTPException(status_code=400, detail="Spotify authorization failed")
 
 # 🔥 Ensure FastAPI runs on Render's dynamically assigned port
 if __name__ == "__main__":
